@@ -1,0 +1,52 @@
+Extract all phone numbers from the following webpage text and return them in a structured JSON format.
+
+Instructions:
+1. Identify and extract all phone numbers
+2. Categorize each number into one of these categories:
+   - "Sales": Numbers related to purchasing, business inquiries, or account managers
+   - "Support": Customer service or technical help
+   - "Recruiting": HR, careers, or hiring lines
+   - "General": Company-wide numbers or reception
+   - "LowValue": Spam, ads, fake, incomplete or clearly irrelevant numbers
+
+3. For each phone number, provide:
+   - The number in E.164 format when possible
+   - The category it belongs to
+   - A confidence score between 0 and 1
+   - The surrounding context (up to 100 characters)
+
+4. Include metadata with:
+   - Total count of unique phone numbers found
+   - ISO 8601 timestamp of when the extraction was performed
+
+Example output format:
+
+{
+  "phone_numbers": [
+    {
+      "number": "+1 (800) 555-1234",
+      "category": "Sales",
+      "confidence": 0.95,
+      "context": "Contact our sales team at +1 (800) 555-1234 for pricing information"
+    },
+    {
+      "number": "+1 (888) 555-5678",
+      "category": "Support",
+      "confidence": 0.9,
+      "context": "For technical support, please call +1 (888) 555-5678"
+    },
+    {
+      "number": "+1 (877) 555-9012",
+      "category": "Recruiting",
+      "confidence": 0.85,
+      "context": "To apply for open positions, reach out to our HR department at +1 (877) 555-9012"
+    }
+  ],
+  "metadata": {
+    "total_numbers_found": 3,
+    "processing_timestamp": "2024-03-20T15:30:00Z"
+  }
+}
+
+Text to process:
+{webpage_text} 

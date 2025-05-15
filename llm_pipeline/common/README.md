@@ -4,31 +4,36 @@ This directory contains shared utilities and base classes used across different 
 
 ## Components
 
-### `llm_base.py`
-Base LLM client class that provides core functionality for interacting with LLM APIs.
+This directory provides the foundational building blocks for interacting with Large Language Models (LLMs) within the pipeline. The key components are:
 
-**Features**:
-- Configurable model and API settings
-- Support for both simple and structured output modes
-- Built-in error handling and retries
-- Response parsing and validation
-- Temperature and token control
+### `llm_client_base.py`
+Defines the `LLMBaseClient` abstract base class (ABC). This class outlines the common interface that all specific LLM clients must implement. It ensures that different LLM providers can be used interchangeably within the pipeline, promoting modularity and flexibility.
+
+**Key aspects**:
+- Abstract methods for core LLM interactions (e.g., `generate`, `get_config`).
+- Common configuration handling.
+
+### `llm_client_factory.py`
+Contains the `LLMClientFactory`. This factory is responsible for creating instances of specific LLM clients based on configuration. It decouples the client creation logic from the rest of the application, making it easier to add or modify client implementations.
 
 **Usage**:
 ```python
-from llm_pipeline.common.llm_base import LLMClient
+from llm_pipeline.common.llm_client_factory import LLMClientFactory
+from llm_pipeline.config import load_config
 
-# Create base client
-client = LLMClient(
-    model_name="your-model",
-    api_url="your-api-url",
-    prompt_path="path/to/prompt.txt",
-    output_mode="structured"  # or "simple"
-)
+# Load pipeline configuration
+config = load_config("path/to/your/config.yaml") # Or your specific config loading mechanism
+
+# Get an LLM client instance (e.g., for Gemini)
+# The factory will look up the appropriate client class based on the config
+llm_client = LLMClientFactory.create_llm_client(client_name="gemini", llm_config=config.llm_clients.gemini)
 
 # Generate results
-result = client.generate("Your text here")
+result = llm_client.generate("Your text here")
 ```
+
+**Note on Specific Client Implementations:**
+Specific client implementations (e.g., for Gemini, Llama, Mixtral) are located in the [`llm_pipeline/clients/`](../clients/) directory. Each of these clients inherits from `LLMBaseClient` (defined in [`llm_pipeline/common/llm_client_base.py`](llm_pipeline/common/llm_client_base.py:0)) and implements the required methods for interacting with its respective LLM service. The `LLMClientFactory` uses these implementations to provide the appropriate client instance.
 
 ### `schema_utils.py`
 Utilities for validating and processing structured output according to the pipeline's schema.
@@ -298,7 +303,8 @@ mypy==1.8.0  # Static type checking
 1. **Import Structure**:
    ```python
    from llm_pipeline.common import (
-       llm_base,
+       llm_client_base,
+       llm_client_factory,
        schema_utils,
        io_utils,
        text_utils,

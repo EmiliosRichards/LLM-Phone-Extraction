@@ -27,6 +27,11 @@ class APICallMetrics:
     success: bool = True
     error_message: Optional[str] = None
     run_id: Optional[str] = None  # Link to the run this call belongs to
+    # New fields requested by user
+    prompt_identifier: Optional[str] = None
+    model_name: Optional[str] = None
+    input_tokens: Optional[int] = None
+    output_tokens: Optional[int] = None
 
 @dataclass
 class RunMetrics:
@@ -46,6 +51,10 @@ class RunMetrics:
     calls_by_api: Dict[str, int]
     errors: List[str]
     urls_processed: List[str]
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Return a dictionary representation of the RunMetrics instance."""
+        return asdict(self)
 
 class MetricsLogger:
     """Class to handle logging of API call metrics."""

@@ -1,9 +1,0 @@
-https://www.github.com
-https://www.stackoverflow.com
-https://www.wikipedia.org
-https://www.reddit.com
-https://www.quora.com
-https://www.medium.com/topics/technology
-https://www.techradar.com
-https://www.zdnet.com
-https://www.venturebeat.com

@@ -1,6 +1,6 @@
 """Schema validation utilities for the LLM pipeline."""
 
-from typing import Dict, Any, List, Optional, Set, Union
+from typing import Dict, Any, List, Optional, Set, Union, Tuple # Tuple might already be here
 from enum import Enum, auto
 
 class SchemaValidationError(Exception):
@@ -17,10 +17,13 @@ class PhoneCategory(str, Enum):
 
 # Required fields for phone number objects
 REQUIRED_PHONE_FIELDS = {
-    "number": str,
-    "category": (str, PhoneCategory),  # Updated to accept both string and enum
+    "original_number_text": str,
+    "normalized_number": str,
+    "category": (str, PhoneCategory),  # Accepts string or PhoneCategory enum
     "confidence": (int, float),
-    "context": str
+    "context_snippet": str
+    # Optional fields like company_name and extra_details are not listed here
+    # as this dict defines fields that *must* be present.
 }
 
 # Valid phone number categories (kept for backward compatibility)
@@ -104,7 +107,7 @@ def validate_metadata(metadata: Dict[str, Any], phone_numbers: List[Dict[str, An
     if strict and metadata["total_numbers_found"] != len(phone_numbers):
         raise SchemaValidationError("'total_numbers_found' doesn't match number of phone numbers")
 
-def validate_output(data: Dict[str, Any], valid_categories: Optional[Set[Union[str, PhoneCategory]]] = None, strict: bool = True) -> bool:
+def validate_output(data: Dict[str, Any], valid_categories: Optional[Set[Union[str, PhoneCategory]]] = None, strict: bool = True) -> Tuple[bool, Optional[str]]:
     """
     Validate that the output data matches the v2 schema.
     
@@ -134,24 +137,7 @@ def validate_output(data: Dict[str, Any], valid_categories: Optional[Set[Union[s
         strict: If False, skips total_numbers_found and confidence range validation
         
     Returns:
-        True if the data is valid
-        
-    Raises:
-        SchemaValidationError: If validation fails, with specific error messages:
-            - "Output must be a dictionary" - Top-level structure invalid
-            - "Missing 'phone_numbers' field" - Required field missing
-            - "Missing 'metadata' field" - Required field missing
-            - "Phone number at index {i} missing required field: {field}" - Missing required phone number field
-            - "Phone number at index {i} field '{field}' has invalid type" - Invalid field type
-            - "Phone number at index {i} has invalid category: {category}" - Invalid category
-            - "Phone number at index {i} has invalid confidence score: {score}" - Invalid confidence score
-            - "'total_numbers_found' doesn't match number of phone numbers" - Count mismatch in strict mode
-        
-    Edge Cases:
-        - Empty phone_numbers list is valid
-        - PhoneCategory enum values are automatically converted to strings
-        - Non-strict mode allows confidence scores outside [0,1] range
-        - Non-strict mode allows metadata.total_numbers_found to differ from actual count
+        A tuple: (is_valid: bool, error_message: Optional[str])
         
     Example:
         >>> data = {
@@ -167,26 +153,28 @@ def validate_output(data: Dict[str, Any], valid_categories: Optional[Set[Union[s
         ...         "total_numbers_found": 1
         ...     }
         ... }
-        >>> validate_output(data)
+        >>> is_valid, error = validate_output(data)
+        >>> is_valid
         True
     """
-    # Check top-level structure
-    if not isinstance(data, dict):
-        raise SchemaValidationError("Output must be a dictionary")
+    try:
+        # Check top-level structure
+        if not isinstance(data, dict):
+            return False, "Output must be a dictionary"
+            
+        if "phone_numbers" not in data:
+            return False, "Missing 'phone_numbers' field"
+            
+        if "metadata" not in data:
+            return False, "Missing 'metadata' field"
         
-    if "phone_numbers" not in data:
-        raise SchemaValidationError("Missing 'phone_numbers' field")
-        
-    if "metadata" not in data:
-        raise SchemaValidationError("Missing 'metadata' field")
-    
-    # Validate phone numbers list
-    validate_phone_number_list(data["phone_numbers"], valid_categories, strict)
-    
-    # Validate metadata
-    validate_metadata(data["metadata"], data["phone_numbers"], strict)
-        
-    return True
+        # These internal validators will raise SchemaValidationError on failure
+        validate_phone_number_list(data["phone_numbers"], valid_categories, strict)
+        validate_metadata(data["metadata"], data["phone_numbers"], strict)
+            
+        return True, None # All validations passed
+    except SchemaValidationError as e:
+        return False, str(e) # Catch internal validation errors and return them
 
 def validate_strict(data: Dict[str, Any], strict: bool = True) -> bool:
     """
